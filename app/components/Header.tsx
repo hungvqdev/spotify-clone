@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation";
 import React from "react";
 import { twMerge } from "tailwind-merge";
+import { toast } from "react-hot-toast";
 import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
 import { HiHome } from "react-icons/hi";
 import { BiSearch } from "react-icons/bi";
 import Button from "./Button";
+import useAuthModal from "@/hooks/useAuthModal";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useUser } from "@/hooks/useUser";
+import DropDown from "./DropDown";
 
 interface HeaderProps {
   children: React.ReactNode;
@@ -14,9 +19,22 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ children, className }) => {
+  const authModal = useAuthModal();
   const router = useRouter();
+  const supabaseClient = useSupabaseClient();
+  const { user } = useUser();
 
-  const handleLogout = () => {};
+  const handleLogout = async () => {
+    const { error } = await supabaseClient.auth.signOut();
+
+    router.refresh();
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Bạn đã đăng xuất");
+    }
+  };
   return (
     <div
       className={twMerge(
@@ -49,16 +67,39 @@ const Header: React.FC<HeaderProps> = ({ children, className }) => {
           </button>
         </div>
         <div className=" flex justify-between items-center gap-x-4">
-          <>
-            <div>
-              <Button className="bg-transparent text-neutral-300 font-semibold">
-                Đăng ký
-              </Button>
+          {user ? (
+            <div className="flex gap-x-4 items-center">
+              {/* <Button onClick={handleLogout} className="bg-white px-6 py-2">
+                Đăng xuất
+              </Button> */}
+              {/* <Button
+                onClick={() => router.push("/account")}
+                className="bg-white "
+              >
+                <FaUserAlt />
+              </Button> */}
+              <DropDown handleLogout={handleLogout} />
             </div>
-            <div>
-              <Button className="bg-white px-6 py-2">Đăng nhập</Button>
-            </div>
-          </>
+          ) : (
+            <>
+              <div>
+                <Button
+                  onClick={authModal.onOpen}
+                  className="bg-transparent text-neutral-300 font-semibold"
+                >
+                  Đăng ký
+                </Button>
+              </div>
+              <div>
+                <Button
+                  onClick={authModal.onOpen}
+                  className="bg-white px-6 py-2"
+                >
+                  Đăng nhập
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       {children}
